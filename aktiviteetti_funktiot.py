@@ -19,7 +19,8 @@ class Aktiviteetti_Manager:
         self.data_polku = self.hae_data_polku() #Määritetään tiedostopolut ja tehdään tarvittaessa tiedostot      
 
     def hae_data_polku(self):
-        config_polku = Path("config.json")
+        OHJELMAKANSIO = Path(__file__).parent
+        config_polku = OHJELMAKANSIO / "config.json"
 
         if not config_polku.exists():
             with open(config_polku, "w", encoding="utf-8") as f:
