@@ -92,6 +92,9 @@ def tee_lisays_tab(alue, manageri):
 
     taulukot = [taulukko_hetki, taulukko_paiva, taulukko_vloppu]
     tayta_taulukko(taulukot, manageri)
+
+    ttk.Label(taulukkoalue, text= f"\nTallennus: {manageri.data_polku}").grid(row=2, columnspan=3, sticky="ew")
+
     return taulukot
 
 def tayta_taulukko(taulukot, manageri):

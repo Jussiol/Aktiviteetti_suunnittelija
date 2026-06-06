@@ -6,7 +6,7 @@ from gui_funktiot import tee_lisays_tab, tayta_taulukko
 def maingui():
 
     ikkuna = tk.Tk()
-    ikkuna.title("Perheen aktiviteetit")
+    ikkuna.title("Aktiviteettien suunnittelija")
     
     valilehdet = ttk.Notebook(ikkuna)
     valilehdet.pack(fill="both", expand=True)
