@@ -1,16 +1,23 @@
 import tkinter as tk
 from tkinter import ttk
 
+def tee_arvo_tab(alue, manageri):
+    print("Arvonta tehty cli mutta gui puuttuu")
+    
 def tee_lisays_tab(alue, manageri):
 
+    ilmoitusalue = ttk.Label(alue)
+    ilmoitusalue.grid(row=0, column=0, sticky="ew")
+    
     lisaysalue = ttk.Frame(alue)
-    lisaysalue.grid(row=0, column=0, sticky="ew")
+    lisaysalue.grid(row=1, column=0, sticky="ew")
 
     taulukkoalue = ttk.Frame(alue)
-    taulukkoalue.grid(row=1, column=0, sticky="nsew")
-    
+    taulukkoalue.grid(row=2, column=0, sticky="nsew")
+   
     alue.columnconfigure(0, weight=1)
-    alue.rowconfigure(1, weight=1)
+    alue.columnconfigure(1, weight=1)
+    alue.rowconfigure(2, weight=1)
 
     lisaysalue.columnconfigure(0, weight=1)
     taulukkoalue.columnconfigure(0, weight=1)
@@ -53,16 +60,6 @@ def tee_lisays_tab(alue, manageri):
         text="Tallenna",
         command=lambda: manageri.lisaa_aktiviteetti(aktiviteetti_entry.get(), kesto.get())
     ).grid(row=4, column=0)
-    
-    viesti = ttk.Label(lisaysalue, text="")
-    viesti.grid(row=5, column=0) 
-
-    def tyhjenna_viesti():
-        manageri.viesti = ""
-        viesti.config(text="")
-
-    viesti.config(text=manageri.viesti)
-    viesti.after(2000,tyhjenna_viesti)
 
     ## AKTIVITEETTIALUE TAULUKOT
 
@@ -79,6 +76,10 @@ def tee_lisays_tab(alue, manageri):
     taulukko_hetki.column("Aktiviteetti", width=200, stretch=True)
     taulukko_hetki.column("Aktiviteetti", width=200, stretch=True)
 
+    ## Taulukoiden arvojen muokkaus
+    taulukko_hetki.bind("<Double-1>", lambda e: avaa_muokkaa_akt(alue, taulukko_hetki, onDoubleClick(taulukko_hetki), manageri))
+    taulukko_paiva.bind("<Double-1>", lambda e: avaa_muokkaa_akt(alue, taulukko_paiva, onDoubleClick(taulukko_paiva), manageri))
+    taulukko_vloppu.bind("<Double-1>", lambda e: avaa_muokkaa_akt(alue, taulukko_vloppu, onDoubleClick(taulukko_vloppu), manageri))
 
     ttk.Label(taulukkoalue, text="Aktiviteetit").grid(row=0, columnspan=3, sticky="ew")
    
@@ -95,7 +96,47 @@ def tee_lisays_tab(alue, manageri):
 
     ttk.Label(taulukkoalue, text= f"\nTallennus: {manageri.data_polku}").grid(row=2, columnspan=3, sticky="ew")
 
-    return taulukot
+    return taulukot, ilmoitusalue
+
+
+def avaa_muokkaa_akt(root, tree, id, manageri):
+    ikkuna = tk.Toplevel(root)
+    ikkuna.title("Muokkaa aktiviteettia")
+    
+    ttk.Label(ikkuna, text="Kuvaus").grid(row=0, column=0)
+    kuvaus_entry = ttk.Entry(ikkuna)
+    kuvaus_entry.grid(row=0, column=1)
+    
+    for akt in manageri.data:
+         if akt.id == int(id):
+              kuvaus_entry.insert(0, akt.kuvaus)
+              kesto = akt.kesto
+              break
+
+
+    #radiobuttonit
+    #ttk.Label(ikkuna, text="Summa").grid(row=1, column=0)
+    #summa_entry = ttk.Entry(ikkuna)
+    #summa_entry.grid(row=1, column=1)
+
+    #poistonappi
+    #ttk.Label(ikkuna, text="Kategoria").grid(row=2, column=0)
+    #kategoria_entry = ttk.Entry(ikkuna)
+    #kategoria_entry.grid(row=2, column=1)
+
+    
+    def muokkaa():
+        manageri.muokkaa_aktiviteettia(int(id), kuvaus_entry.get())
+
+    ttk.Button(
+        ikkuna,
+        text="Muokkaa",
+        command=muokkaa
+    ).grid(row=3, columnspan=2, pady=10)
+    
+def onDoubleClick(taulukko):
+    item = taulukko.selection()[0]
+    return item
 
 def tayta_taulukko(taulukot, manageri):
     manageri.lue_json()
@@ -106,16 +147,16 @@ def tayta_taulukko(taulukot, manageri):
     for akt in manageri.data:
         if akt.kesto == 1: #hetki
                 taulukot[0].insert("", "end", values=(
-                akt.kuvaus,
-            ))
+                akt.kuvaus,), iid = akt.id
+                )
         elif akt.kesto == 2: #päivä
                 taulukot[1].insert("", "end", values=(
-                akt.kuvaus,
-            ))
+                akt.kuvaus,), iid = akt.id
+                )
         else:   #viikonloppu
             taulukot[2].insert("", "end", values=(
-                akt.kuvaus,
-            ))
+                akt.kuvaus,), iid = akt.id
+                )
     return taulukot
                 
 

@@ -1,0 +1,69 @@
+{
+    "aktiviteetit": [
+        {
+            "id": 1,
+            "kuvaus": "Siivous",
+            "kesto": 1
+        },
+        {
+            "id": 2,
+            "kuvaus": "try a new restaurant",
+            "kesto": 2
+        },
+        {
+            "id": 3,
+            "kuvaus": "testi",
+            "kesto": 3
+        },
+        {
+            "id": 4,
+            "kuvaus": "Travel to another city",
+            "kesto": 2
+        },
+        {
+            "id": 5,
+            "kuvaus": "Travel to another country",
+            "kesto": 3
+        },
+        {
+            "id": 6,
+            "kuvaus": "Eat crab in Helsinki",
+            "kesto": 2
+        },
+        {
+            "id": 7,
+            "kuvaus": "Create podcast",
+            "kesto": 1
+        },
+        {
+            "id": 8,
+            "kuvaus": "Lose weight",
+            "kesto": 1
+        },
+        {
+            "id": 9,
+            "kuvaus": "Make a new recipe (cake or salty)",
+            "kesto": 1
+        },
+        {
+            "id": 10,
+            "kuvaus": "Clean backyard",
+            "kesto": 2
+        },
+        {
+            "id": 11,
+            "kuvaus": "Clean one room of the house",
+            "kesto": 2
+        },
+        {
+            "id": 12,
+            "kuvaus": "Visit a museum",
+            "kesto": 2
+        },
+        {
+            "id": 13,
+            "kuvaus": "Have a picnic",
+            "kesto": 2
+        }
+    ]
+}

@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 from dataclasses import dataclass, asdict
+from random import choice
 
 @dataclass
 class Aktiviteetti():
@@ -16,7 +17,9 @@ class Aktiviteetti_Manager:
         self.viimeisin_mtime = None
         self.data = []
         self.viesti = ""
+        self.uusi_viesti = False
         self.data_polku = self.hae_data_polku() #Määritetään tiedostopolut ja tehdään tarvittaessa tiedostot      
+        self.arpoja = FIFOarpoja()
 
     def hae_data_polku(self):
         OHJELMAKANSIO = Path(__file__).parent
@@ -41,19 +44,30 @@ class Aktiviteetti_Manager:
 
             with open(data_polku, "w", encoding="utf-8") as f:
                 json.dump(
-                    {"aktiviteetit": []},
-                    f,
+                {
+                    "aktiviteetit": [],
+                    "arvonta": {
+                        "vaihtoehdot": [],
+                        "estetyt": []
+                    }
+                },
+                f,
                     ensure_ascii=False,
                     indent=4
                 )
         return data_polku
     
-    def lue_json(self):
+    def lue_json(self) -> None:
         if self.data_polku.exists():
             with open(self.data_polku, "r", encoding = "utf-8") as f:
                 raakadata = json.load(f)
 
             self.data = [Aktiviteetti(**rivi) for rivi in raakadata["aktiviteetit"]]
+            arvonta = raakadata.get("arvonta", {})
+            self.arpoja = FIFOarpoja(
+                arvonta.get("vaihtoehdot", []),
+                arvonta.get("estetyt", [])
+                )        
         else:
             raise FileNotFoundError(
                 f"Tiedostoa ei löytynyt: {self.data_polku}"
@@ -64,7 +78,11 @@ class Aktiviteetti_Manager:
             "aktiviteetit": [
                 asdict(aktiviteetti)
                 for aktiviteetti in self.data
-            ]
+            ],        
+            "arvonta": {
+                "vaihtoehdot": self.arpoja.vaihtoehdot,
+                "estetyt": self.arpoja.estetyt
+            }
             }
         with open(self.data_polku, "w", encoding = "utf-8") as j:
             json.dump(tallennettava, j, ensure_ascii=False, indent=4)
@@ -72,7 +90,7 @@ class Aktiviteetti_Manager:
 
     def lisaa_aktiviteetti(self, lisa_kuvaus, lisa_kesto):
         if not lisa_kuvaus.strip():
-            self.viesti =  "Anna aktiviteetti!"
+            self.lisaa_viesti("Anna aktiviteetti!")
             return
         self.lue_json()
         # Päivitetään ensin olemassaoleva aktiviteetti jos löytyy
@@ -81,7 +99,7 @@ class Aktiviteetti_Manager:
                 if lisa_kesto is not None:
                     aktiviteetti.kesto = lisa_kesto
                 self.kirjoita_json()
-                self.viesti = "Päivitetty!"
+                self.lisaa_viesti("Päivitetty!")
                 return
          
         # lisätään uusi aktiviteetti jos ei ollut ennestään
@@ -90,20 +108,105 @@ class Aktiviteetti_Manager:
         self.data.append(uusi_meno)
 
         self.kirjoita_json()
-        self.viesti = "Tallennettu!"
+        self.lisaa_viesti("Tallennettu!")
         return 
-
-    def tulosta_aktiviteetit(self):
-        self.lue_json()
-        return self.data
     
-        
+    def muokkaa_aktiviteettia(self, id, kuvaus=None, kesto=None):
+        for akt in self.data:
+            if akt.id == id:
+                if kuvaus is not None:
+
+                    akt.kuvaus = kuvaus
+                if kesto is not None:
+                    akt.kesto = kesto
+                self.kirjoita_json()
+                return
+
     def tarkista_data_muutos(self):
         nykyinen_mtime = self.data_polku.stat().st_mtime
         if nykyinen_mtime != self.viimeisin_mtime:
             self.viimeisin_mtime = nykyinen_mtime
             return True
         return False
+    
+    def lisaa_viesti(self, viesti):
+        self.uusi_viesti = True
+        self.viesti = viesti
+
+    def listaa_keston_mukaan(self, kayt_aika: int) -> list:
+        self.lue_json()
+        valitut = []
+        jaljella = kayt_aika
+        
+        while jaljella > 0:
+            sopivat = [
+                akt for akt in self.data if akt.kesto <= jaljella
+            ]
+            sopivat_idt = [akt.id for akt in sopivat]
+
+            if not sopivat_idt:
+                break
+
+            valittu = self.arpoja.valitse(sopivat_idt)
+            for akt in self.data:
+                if akt.id == valittu:
+                    jaljella -= akt.kesto
+                    valitut.append(akt.kuvaus)
+                    break
+        self.kirjoita_json()
+        return valitut
+
+
+class FIFOarpoja:
+    def __init__(self, vaihtoehdot=None, estetyt=None):
+        self.vaihtoehdot = vaihtoehdot or []
+        self.estetyt = estetyt or []
+    
+    def laske_eston_pituus(self, maara):
+        
+        if maara <= 1:
+            return 0
+        if maara <= 3:
+            return 1
+        if maara <= 6:
+            return 2
+        return 3 
+    
+    def valitse(self, kaikki):
+        
+        #siivotaan listat siltä varalta, että "kaikki"-listaa on muutettu
+        self.vaihtoehdot = [x for x in self.vaihtoehdot if x in kaikki]
+        self.estetyt = [x for x in self.estetyt if x in kaikki]
+            
+        estopituus = self.laske_eston_pituus(len(kaikki))
+        if not self.vaihtoehdot:
+            self.vaihtoehdot = list(kaikki)
+        aktiviteetti = choice(self.vaihtoehdot)
+        self.estetyt.append(aktiviteetti)
+        self.vaihtoehdot.remove(aktiviteetti)
+        
+        if len(self.estetyt) > estopituus:
+            self.vaihtoehdot.append(self.estetyt.pop(0))
+
+        return aktiviteetti
+
         
 if __name__ == "__main__":
     print("Ei suoritettava tiedosto")
+    testimanageri = Aktiviteetti_Manager()
+    print()
+    print("0 lopettaa")
+    print()
+    while True:
+
+        kesto = int(input("Anna kesto 1-3 "))
+        
+        try:
+            arvotut = testimanageri.listaa_keston_mukaan(kesto)
+            print("Ehdotukset:")
+            for arvottu in arvotut:
+                print(f"  - {arvottu}")
+            print()
+        except :
+            print("Numero 1-3 kiitos")
+            continue
